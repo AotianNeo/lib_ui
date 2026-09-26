@@ -5,8 +5,6 @@
 #include <QtGui/QFont>
 #include <QtGui/QFontInfo>
 
-#include "ui/style/style_core_font.h"
-#include "ui/style/style_core_scale.h"
 
 // Mock scale implementation for multi-DPI testing
 namespace style {

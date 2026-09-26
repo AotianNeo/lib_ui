@@ -17,12 +17,6 @@ jobs:
         with:
           path: lib_ui
 
-      - name: Checkout lib_base dependency
-        uses: actions/checkout@v4
-        with:
-          repository: desktop-app/lib_base
-          path: lib_base
-
       - name: Setup MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
 
@@ -37,19 +31,19 @@ jobs:
       - name: Compile and Run DirectWrite Font Verification Test
         shell: pwsh
         run: |
-          $qtInclude = "$env:Qt6_DIR/include"
-          Write-Host "Qt6 Directory: $env:Qt6_DIR"
-          Write-Host "Compiling test_font_verification.cpp with MSVC cl.exe..."
+          $qtDir = if ($env:QT_ROOT_DIR) { $env:QT_ROOT_DIR } elseif ($env:Qt6_DIR) { $env:Qt6_DIR } else { "D:\a\lib_ui\Qt\6.7.3\msvc2019_64" }
+          Write-Host "Resolved Qt Directory: $qtDir"
+          $qtInclude = "$qtDir/include"
+          $qtLib = "$qtDir/lib"
+          $qtBin = "$qtDir/bin"
           
+          Write-Host "Compiling test_font_verification.cpp with MSVC cl.exe..."
           cl.exe /EHsc /std:c++20 `
-            /I"lib_ui" `
-            /I"lib_base" `
             /I"$qtInclude" `
             /I"$qtInclude/QtCore" `
             /I"$qtInclude/QtGui" `
-            /I"$qtInclude/QtWidgets" `
             lib_ui/tests/test_font_verification.cpp `
-            /link /LIBPATH:"$env:Qt6_DIR/lib" Qt6Core.lib Qt6Gui.lib `
+            /link /LIBPATH:"$qtLib" Qt6Core.lib Qt6Gui.lib `
             /OUT:test_font_verification.exe
 
           if ($LASTEXITCODE -ne 0) {
@@ -59,7 +53,7 @@ jobs:
 
           Write-Host "Compilation SUCCESS! Running verification test binary..."
           
-          $env:PATH = "$env:Qt6_DIR/bin;$env:PATH"
+          $env:PATH = "$qtBin;$env:PATH"
           .\test_font_verification.exe
 
           if ($LASTEXITCODE -ne 0) {
