@@ -1,0 +1,70 @@
+name: Verify DirectWrite Font Build on Windows (MSVC + Qt 6)
+
+on:
+  push:
+    branches:
+      - ci-verify
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: MSVC C++20 & DirectWrite Logic Verification
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout lib_ui
+        uses: actions/checkout@v4
+        with:
+          path: lib_ui
+
+      - name: Checkout lib_base dependency
+        uses: actions/checkout@v4
+        with:
+          repository: desktop-app/lib_base
+          path: lib_base
+
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Qt 6.7
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2022_64'
+
+      - name: Compile and Run DirectWrite Font Verification Test
+        shell: pwsh
+        run: |
+          $qtInclude = "$env:Qt6_DIR/include"
+          Write-Host "Qt6 Directory: $env:Qt6_DIR"
+          Write-Host "Compiling test_font_verification.cpp with MSVC cl.exe..."
+          
+          cl.exe /EHsc /std:c++20 `
+            /I"lib_ui" `
+            /I"lib_base" `
+            /I"$qtInclude" `
+            /I"$qtInclude/QtCore" `
+            /I"$qtInclude/QtGui" `
+            /I"$qtInclude/QtWidgets" `
+            lib_ui/tests/test_font_verification.cpp `
+            /link /LIBPATH:"$env:Qt6_DIR/lib" Qt6Core.lib Qt6Gui.lib `
+            /OUT:test_font_verification.exe
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Compilation failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+
+          Write-Host "Compilation SUCCESS! Running verification test binary..."
+          
+          $env:PATH = "$env:Qt6_DIR/bin;$env:PATH"
+          .\test_font_verification.exe
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Verification test failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+
+          Write-Host ">>> ALL CHECKS PASSED SUCCESSFULLY! <<<"
