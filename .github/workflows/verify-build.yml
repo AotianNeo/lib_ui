@@ -38,7 +38,7 @@ jobs:
           $qtBin = "$qtDir/bin"
           
           Write-Host "Compiling test_font_verification.cpp with MSVC cl.exe..."
-          cl.exe /EHsc /std:c++20 `
+          cl.exe /EHsc /std:c++20 /Zc:__cplusplus /permissive- `
             /I"$qtInclude" `
             /I"$qtInclude/QtCore" `
             /I"$qtInclude/QtGui" `
@@ -54,6 +54,7 @@ jobs:
           Write-Host "Compilation SUCCESS! Running verification test binary..."
           
           $env:PATH = "$qtBin;$env:PATH"
+          $env:QT_QPA_PLATFORM = "offscreen"
           .\test_font_verification.exe
 
           if ($LASTEXITCODE -ne 0) {
